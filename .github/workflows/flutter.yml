@@ -8,37 +8,51 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Check out the repository
+      uses: actions/checkout@v2
 
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt-get install -y curl unzip xz-utils zip libglu1-mesa
+      # Installing necessary dependencies including jq for JSON processing
+      run: sudo apt-get update && sudo apt-get install -y curl unzip xz-utils zip libglu1-mesa jq
 
     - name: Set up Flutter
+      # Using a pre-defined GitHub Action to set up Flutter
       uses: subosito/flutter-action@v2
       with:
         flutter-version: '3.7.3' # Specify the Flutter version you need
 
     - name: Flutter Pub Get
+      # Running flutter pub get to install dependencies
       run: flutter pub get
 
     - name: Flutter Analyze
+      # Running flutter analyze to check for any issues in the Flutter project
       run: flutter analyze
 
     - name: Flutter Build APK
+      # Building the release APK
       run: flutter build apk --release
 
     - name: Set up Python
+      # Setting up Python
       uses: actions/setup-python@v2
       with:
         python-version: '3.x'
 
     - name: Install Dependencies
+      # Installing required Python packages for Google Drive API
       run: pip install google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client
 
     - name: Create credentials.json
+      # Writing the JSON secret to a file
       run: echo "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}" > scripts/credentials.json
 
+    - name: Validate JSON
+      # Validating the JSON format using jq
+      run: jq . scripts/credentials.json
+
     - name: Upload to Google Drive
+      # Running the Python script to upload the build APK to Google Drive
       run: |
         python scripts/upload_to_drive.py build/app/outputs/flutter-apk/app-release.apk ${{ secrets.GDRIVE_FOLDER_ID }}
       env:
